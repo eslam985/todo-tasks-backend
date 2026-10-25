@@ -32,11 +32,15 @@ const handleRegister = async (req, res) => {
       password: hashPwd
     });
 
-    res.status(201).json({ success: `Registration successful, User ${username}` })
+    res.status(201).json({ 
+      success: true, 
+      message:`Registration successful, User ${username}`
+      
+    })
   } catch (err) {
     console.error(err)
     res.status(500).json({ success: false, message: "Server Error" })
-  }
+  } 
 }
 
 module.exports = handleRegister

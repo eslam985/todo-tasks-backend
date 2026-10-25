@@ -1,5 +1,5 @@
-
 const User = require("../model/User.js");
+const cookieOptions = require("../config/cookieOptions.js");
 
 const handleLogout = async (req, res) => {
   try {
@@ -10,31 +10,29 @@ const handleLogout = async (req, res) => {
 
     const foundUser = await User.findOne({ refreshtoken: refreshToken }).exec();
 
-    const isProduction = process.env.NODE_ENV === "production";
-
-    const cookieOptions = {
-      httpOnly: true,
-      sameSite: isProduction ? "None" : "Lax",
-      secure: isProduction
-    };
-
     if (!foundUser) {
       res.clearCookie("jwt", cookieOptions);
-      return res.sendStatus(204);
+      res.sendStatus(204);
+
+      return;
     }
 
     foundUser.refreshtoken = null;
-    await foundUser.save();
-
-    if (!cookies?.jwt) {
-      return res.status(200).json({
-        message: "Already logged out"
-      });
-    }
 
     res.clearCookie("jwt", cookieOptions);
 
-    res.status(200).json({ success: false, message: "Logout successful" });
+    await foundUser.save();
+
+    if (!cookies?.jwt) {
+      res.status(200).json({
+        success: true,
+        message: "Already logged out",
+      });
+
+      return;
+    }
+
+    res.status(200).json({ success: true, message: "Logout successful" });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);

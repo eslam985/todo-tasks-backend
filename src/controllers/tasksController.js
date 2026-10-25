@@ -2,21 +2,36 @@ const Task = require("../model/Task.js");
 const mongoose = require("mongoose");
 
 const getAllTasks = async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
-  const skip = (page - 1) * limit;
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
 
-  const tasks = await Task.find({ userId: req.userId }).
-  sort({ createdAt: -1 }).
-  skip(skip).
-  limit(limit).
-  exec();
 
-  const total = await Task.countDocuments({ userId: req.userId });
+    const [tasks, total] = await Promise.all([
+    Task.find({ userId: req.userId }).
+    sort({ createdAt: -1 }).
+    skip(skip).
+    limit(limit).
+    exec(),
+    Task.countDocuments({ userId: req.userId })]
+    );
 
-  res.
-  status(200).
-  json({ tasks, total, page, totalPage: Math.ceil(total / limit) });
+
+    res.status(200).json({
+      success: true,
+      message: `found ${total} Task(s)`,
+      data: {
+        tasks,
+        total,
+        page,
+        totalPage: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.sendStatus(500);
+  }
 };
 
 const addNewTask = async (req, res) => {
@@ -30,7 +45,11 @@ const addNewTask = async (req, res) => {
       userId: req.userId
     });
 
-    res.status(201).json(result);
+    res.status(201).json({
+      success: true,
+      message: `Added Task ${result.title} successfully!`,
+      data: result
+    });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
@@ -54,7 +73,12 @@ const editTask = async (req, res) => {
     if (description) foundTask.description = description;
 
     const result = await foundTask.save();
-    res.status(200).json(result);
+
+    res.status(200).json({
+      success: true,
+      message: `Updated Task ${result.title} successfully!`,
+      data: result
+    });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
@@ -77,7 +101,7 @@ const deleteTask = async (req, res) => {
     if (!foundTask) return res.status(403).json({ success: false, message: `Forbidden` });
 
     await foundTask.deleteOne();
-    res.status(200).json({ success: false, message: `Task ${id} deleted` });
+    res.status(200).json({ success: true, message: `Task ${id} deleted` });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
@@ -87,7 +111,7 @@ const deleteTask = async (req, res) => {
 const changesTaskStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) return res.status(400).json({ success: false, message: "taskId is required" });
 
     if (!mongoose.Types.ObjectId.isValid(id))
@@ -96,7 +120,7 @@ const changesTaskStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!["pending", "completed"].includes(status) || !status)
-      return res.status(400).json({ success: false, message: "status most be pending or completed" });
+    return res.status(400).json({ success: false, message: "status most be pending or completed" });
 
     const foundTask = await Task.findOne({
       _id: id,
@@ -105,11 +129,15 @@ const changesTaskStatus = async (req, res) => {
 
     if (!foundTask) return res.status(403).json({ success: false, message: `Forbidden` });
 
-    foundTask.status = status
+    foundTask.status = status;
 
     const result = await foundTask.save();
 
-    res.status(200).json(result);
+    res.status(200).json({
+      success: true,
+      message: `change Task status ${result.status} successfully!`,
+      data: result
+    });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
@@ -118,8 +146,12 @@ const changesTaskStatus = async (req, res) => {
 
 const deleteAllTasks = async (req, res) => {
   try {
-    await Task.deleteMany({ userId: req.userId });
-    res.sendStatus(204);
+    const result = await Task.deleteMany({ userId: req.userId });
+
+    res.status(200).json({
+      success: true,
+      message: `deleted ${result.deletedCount} Tsak(s) successfully!`
+    });
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
