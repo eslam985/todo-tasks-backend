@@ -6,19 +6,22 @@ const handleRegister = async (req, res) => {
     const { username, password, email } = req.body;
     
     if (!username || !password || !email)
-      return res.status(400).json({ message: "All Fields Is Required" });
+      return res.status(400).json({ success: false, message: "All Fields Is Required" });
 
     if (password.length < 8)
-      return res.status(400).json({ message: "The password must be at least 8 characters long." });
+      return res.status(400).json({ success: false, message: "The password must be at least 8 characters long." });
+
+    if (username.length < 3)
+      return res.status(400).json({ success: false, message: "The username must be at least 8 characters long." });
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+      return res.status(400).json({ success: false, message: "Invalid email format" });
     }
     
     const duplicate = await User.findOne({ $or: [{ username }, { email }] }).exec();
     if (duplicate) {
-      return res.status(409).json({ message: `Username or Email already exists` });
+      return res.status(409).json({ success: false, message: `Username or Email already exists` });
     }
 
     const hashPwd = await bcrypt.hash(password, 10);
@@ -32,7 +35,7 @@ const handleRegister = async (req, res) => {
     res.status(201).json({ success: `Registration successful, User ${username}` })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: "Server Error" })
+    res.status(500).json({ success: false, message: "Server Error" })
   }
 }
 

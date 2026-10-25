@@ -48,7 +48,7 @@ app.use(verifyJWT);
 app.use("/api/tasks", require("./routes/api/tasks/index.js"));
 
 app.use((req, res) => {
-  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 
 app.use(errorHandlerjSON);
