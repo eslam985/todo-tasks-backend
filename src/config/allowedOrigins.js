@@ -18,4 +18,4 @@ if (process.env.NODE_ENV !== "production") {
   console.log(allowedOrigins);
 }
 
-export default allowedOrigins;
+module.exports = allowedOrigins;

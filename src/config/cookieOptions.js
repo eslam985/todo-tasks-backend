@@ -4,7 +4,7 @@ const cookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: "lax",
-  path: "/api/auth"
+  path: "/api/auth",
 };
 
-export default cookieOptions;
+module.exports = cookieOptions;
