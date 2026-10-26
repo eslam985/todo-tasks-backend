@@ -2,15 +2,17 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 app.set("trust proxy", 1);
-const mongoose = require("mongoose");
+
 const cookieParser = require("cookie-parser");
+const mongoose = require("mongoose");
 const helmet = require("helmet");
 const cors = require("cors");
 
-const connectedDB = require("./config/dbConn.js");
-const verifyJWT = require("./middleware/verifyJWT.js");
-const corsOptions = require("./config/corsOptions.js");
 const { authLimiter, generalLimiter } = require("./config/rateLimiter.js");
+const corsOptions = require("./config/corsOptions.js");
+const connectedDB = require("./config/dbConn.js");
+
+const verifyJWT = require("./middleware/verifyJWT.js");
 const { logger } = require("./middleware/logEvents.js");
 const {
   errorHandler,
