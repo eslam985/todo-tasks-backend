@@ -3,30 +3,29 @@ const mongoose = require("mongoose");
 
 const getAllTasks = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
+    const currentPage = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const skip = (currentPage - 1) * limit;
 
-
-    const [tasks, total] = await Promise.all([
-    Task.find({ userId: req.userId }).
-    sort({ createdAt: -1 }).
-    skip(skip).
-    limit(limit).
-    exec(),
-    Task.countDocuments({ userId: req.userId })]
-    );
-
+    const [tasks, totalTasks] = await Promise.all([
+      Task.find({ userId: req.userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      Task.countDocuments({ userId: req.userId }),
+    ]);
 
     res.status(200).json({
       success: true,
-      message: `found ${total} Task(s)`,
-      data: {
-        tasks,
-        total,
-        page,
-        totalPage: Math.ceil(total / limit)
-      }
+      message: `found ${totalTasks} Task(s)`,
+      data: tasks,
+      pagination: {
+        total: totalTasks,
+        page: currentPage,
+        limit: limit,
+        totalPage: Math.ceil(totalTasks / limit),
+      },
     });
   } catch (err) {
     console.error(err);
@@ -37,18 +36,21 @@ const getAllTasks = async (req, res) => {
 const addNewTask = async (req, res) => {
   try {
     const { title, description } = req.body;
-    if (!title) return res.status(400).json({ success: false, message: "Task title required" });
+    if (!title)
+      return res
+        .status(400)
+        .json({ success: false, message: "Task title required" });
 
     const result = await Task.create({
       title: title,
       description: description || null,
-      userId: req.userId
+      userId: req.userId,
     });
 
     res.status(201).json({
       success: true,
       message: `Added Task ${result.title} successfully!`,
-      data: result
+      data: result,
     });
   } catch (err) {
     console.error(err);
@@ -60,14 +62,18 @@ const editTask = async (req, res) => {
   try {
     const { title, description } = req.body;
     const { id } = req.params;
-    if (!id) return res.status(400).json({ success: false, message: "taskId is required" });
+    if (!id)
+      return res
+        .status(400)
+        .json({ success: false, message: "taskId is required" });
 
     const foundTask = await Task.findOne({
       _id: id,
-      userId: req.userId
+      userId: req.userId,
     }).exec();
 
-    if (!foundTask) return res.status(403).json({ success: false, message: `Forbidden` });
+    if (!foundTask)
+      return res.status(403).json({ success: false, message: `Forbidden` });
 
     if (title) foundTask.title = title;
     if (description) foundTask.description = description;
@@ -77,7 +83,7 @@ const editTask = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `Updated Task ${result.title} successfully!`,
-      data: result
+      data: result,
     });
   } catch (err) {
     console.error(err);
@@ -88,17 +94,23 @@ const editTask = async (req, res) => {
 const deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ success: false, message: "taskId is required" });
+    if (!id)
+      return res
+        .status(400)
+        .json({ success: false, message: "taskId is required" });
 
     if (!mongoose.Types.ObjectId.isValid(id))
-    return res.status(400).json({ success: false, message: "Invalid Task ID structure" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid Task ID structure" });
 
     const foundTask = await Task.findOne({
       _id: id,
-      userId: req.userId
+      userId: req.userId,
     }).exec();
 
-    if (!foundTask) return res.status(403).json({ success: false, message: `Forbidden` });
+    if (!foundTask)
+      return res.status(403).json({ success: false, message: `Forbidden` });
 
     await foundTask.deleteOne();
     res.status(200).json({ success: true, message: `Task ${id} deleted` });
@@ -112,22 +124,31 @@ const changesTaskStatus = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!id) return res.status(400).json({ success: false, message: "taskId is required" });
+    if (!id)
+      return res
+        .status(400)
+        .json({ success: false, message: "taskId is required" });
 
     if (!mongoose.Types.ObjectId.isValid(id))
-    return res.status(400).json({ success: false, message: "Invalid Task ID structure" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid Task ID structure" });
 
     const { status } = req.body;
 
     if (!["pending", "completed"].includes(status) || !status)
-    return res.status(400).json({ success: false, message: "status most be pending or completed" });
+      return res.status(400).json({
+        success: false,
+        message: "status most be pending or completed",
+      });
 
     const foundTask = await Task.findOne({
       _id: id,
-      userId: req.userId
+      userId: req.userId,
     }).exec();
 
-    if (!foundTask) return res.status(403).json({ success: false, message: `Forbidden` });
+    if (!foundTask)
+      return res.status(403).json({ success: false, message: `Forbidden` });
 
     foundTask.status = status;
 
@@ -136,7 +157,7 @@ const changesTaskStatus = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `change Task status ${result.status} successfully!`,
-      data: result
+      data: result,
     });
   } catch (err) {
     console.error(err);
@@ -150,7 +171,7 @@ const deleteAllTasks = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `deleted ${result.deletedCount} Tsak(s) successfully!`
+      message: `deleted ${result.deletedCount} Tsak(s) successfully!`,
     });
   } catch (err) {
     console.error(err);
@@ -158,12 +179,11 @@ const deleteAllTasks = async (req, res) => {
   }
 };
 
-
 module.exports = {
   getAllTasks,
   addNewTask,
   editTask,
   deleteTask,
   changesTaskStatus,
-  deleteAllTasks
+  deleteAllTasks,
 };
